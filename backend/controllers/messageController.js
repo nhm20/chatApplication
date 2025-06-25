@@ -10,7 +10,17 @@ export async function getMessages(req, res) {
   }
 }
 
-export async function createMessage(req, res) {
+export async function fetchMessagesFromDB() {
+  try {
+    const messages = await Message.find().sort({ timestamp: 1 }).limit(50);
+    return messages;
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    throw error;
+  }
+}
+
+export async function createMessage(messageData) {
   try {
     const message = await Message.create(messageData);
     return message;
