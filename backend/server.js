@@ -1,36 +1,40 @@
 import express from "express";
-import http from "http";
-import { Server } from "socket.io";
 import cors from "cors";
+import authRoutes from "./routes/authRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import authMiddleware from "./middleware/authMiddleware.js";
+import errorHandler from "./middleware/errorHandler.js";
+import http from "http";
 import dotenv from "dotenv";
-import connectDB from "./config/database.js";
-import messageRoutes from "./routes/messageRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import initializeSocket from "./services/socketService.js";
+import connectDB from "./config/db.js";
 
 dotenv.config();
 
-connectDB();
-
 const app = express();
 
-app.use(cors());
+connectDB();
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-app.use("/api/messages", messageRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
 
-const server = http.createServer(app);
+app.use(errorHandler);
 
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL,
-    methods: ["GET", "POST"],
-  },
-});
-
-initializeSocket(io);
+import { initializeSocket } from "./utils/socket.js";
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = http.createServer(app);
+
+initializeSocket(server);
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
